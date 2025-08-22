@@ -1,8 +1,7 @@
 <template>
   <div class="app">
     <header class="header">
-      <h1>🎥 Mama Talk</h1>
-      <p>Connect with your loved ones through video calls</p>
+      <h1>🎥 MamaTalk</h1>
     </header>
 
     <!-- Join Room Screen -->
@@ -21,16 +20,6 @@
           </div>
         </div>
 
-        <div class="input-group">
-          <label for="userName">Your Name</label>
-          <input
-            id="userName"
-            v-model="userName"
-            type="text"
-            placeholder="Enter your name"
-            @keyup.enter="joinRoom" />
-        </div>
-
         <div v-if="!roomIdFromUrl" class="input-group">
           <label for="roomId">Room ID</label>
           <input
@@ -41,10 +30,7 @@
             @keyup.enter="joinRoom" />
         </div>
 
-        <button
-          @click="joinRoom"
-          :disabled="!userName || (!roomId && !roomIdFromUrl)"
-          class="join-btn">
+        <button @click="joinRoom" :disabled="!roomId && !roomIdFromUrl" class="join-btn">
           Join Room
         </button>
 
@@ -75,16 +61,18 @@
     <!-- Video Call Screen -->
     <div v-if="isConnected" class="call-screen">
       <div class="video-container">
-        <div class="local-video-wrapper">
-          <video ref="localVideo" class="local-video" autoplay muted playsinline></video>
-          <div class="video-label">You ({{ userName }})</div>
-        </div>
-
+        <!-- Remote videos (larger) -->
         <div class="remote-videos">
           <div v-for="peer in remotePeers" :key="peer.userId" class="remote-video-wrapper">
             <video :data-user-id="peer.userId" class="remote-video" autoplay playsinline></video>
             <div class="video-label">{{ peer.userName }}</div>
           </div>
+        </div>
+
+        <!-- My video (smaller, positioned as overlay in upper right) -->
+        <div class="local-video-wrapper">
+          <video ref="localVideo" class="local-video" autoplay muted playsinline></video>
+          <div class="video-label">You ({{ userName }})</div>
         </div>
       </div>
 
@@ -171,12 +159,51 @@ export default {
       return `${baseUrl}/room/${currentRoomId.value}`;
     });
 
+    // Generate random user name
+    const generateRandomName = () => {
+      const adjectives = [
+        'Happy',
+        'Sunny',
+        'Clever',
+        'Brave',
+        'Gentle',
+        'Bright',
+        'Swift',
+        'Kind',
+        'Cool',
+        'Smart',
+      ];
+      const nouns = [
+        'Fox',
+        'Eagle',
+        'Lion',
+        'Dolphin',
+        'Tiger',
+        'Bear',
+        'Wolf',
+        'Rabbit',
+        'Owl',
+        'Hawk',
+      ];
+      const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const noun = nouns[Math.floor(Math.random() * nouns.length)];
+      const number = Math.floor(Math.random() * 100);
+      return `${adjective}${noun}${number}`;
+    };
+
     // Initialize from URL
     onMounted(() => {
+      // Generate random name on mount
+      userName.value = generateRandomName();
+
       const urlParts = window.location.pathname.split('/');
       if (urlParts[1] === 'room' && urlParts[2]) {
         roomIdFromUrl.value = urlParts[2];
         roomId.value = urlParts[2];
+        // Auto-join room if coming from URL
+        setTimeout(() => {
+          joinRoom();
+        }, 100);
       }
     });
 
@@ -275,9 +302,19 @@ export default {
         console.log('Video tracks:', localStream.getVideoTracks().length);
         console.log('Audio tracks:', localStream.getAudioTracks().length);
 
+        // Use nextTick to ensure the video element is ready
+        await nextTick();
+
         if (localVideo.value) {
           localVideo.value.srcObject = localStream;
           console.log('Local video element assigned');
+
+          // Wait for video to load and play
+          localVideo.value.onloadedmetadata = () => {
+            localVideo.value.play().catch(console.error);
+            console.log('Local video playing');
+          };
+
           mediaStatus.value = 'Local video ready!';
         } else {
           console.error('Local video element not found');
@@ -296,10 +333,22 @@ export default {
     // Join room
     const joinRoom = async () => {
       const finalRoomId = roomIdFromUrl.value || roomId.value;
-      if (!userName.value.trim() || !finalRoomId.trim()) return;
+      if (!finalRoomId.trim()) return;
+
+      // Generate new name if empty (shouldn't happen but safety check)
+      if (!userName.value.trim()) {
+        userName.value = generateRandomName();
+      }
 
       try {
         await initializeMedia();
+
+        // Ensure local video is properly connected after joining
+        await nextTick();
+        if (localVideo.value && localStream) {
+          localVideo.value.srcObject = localStream;
+          console.log('Re-assigning local video after join');
+        }
 
         // Wait a bit for video element to be ready
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -342,6 +391,15 @@ export default {
         });
 
         isConnected.value = true;
+
+        // Final check to ensure local video is working
+        setTimeout(() => {
+          if (localVideo.value && localStream && !localVideo.value.srcObject) {
+            console.log('Final attempt to connect local video');
+            localVideo.value.srcObject = localStream;
+            localVideo.value.play().catch(console.error);
+          }
+        }, 1000);
 
         // Update URL to room URL
         if (!roomIdFromUrl.value && window.history && window.history.pushState) {
@@ -565,13 +623,15 @@ export default {
 
 <style scoped>
 .app {
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
   text-align: center;
-  padding: 2rem;
+  padding: 2rem 1rem;
   color: white;
 }
 
@@ -757,33 +817,60 @@ export default {
 
 .call-screen {
   position: relative;
-  height: 100vh;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  height: 100vh;
 }
 
 .video-container {
-  flex: 1;
-  display: grid;
+  position: relative; /* Make container relative for absolute positioning */
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   padding: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  align-content: center;
+  align-items: center;
 }
 
-.local-video-wrapper,
+.local-video-wrapper {
+  position: absolute; /* Position as overlay */
+  top: 0; /* Position near top of container */
+  right: 2rem; /* Position on right side */
+  background: #000;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  width: 200px; /* Smaller width for local video */
+  z-index: 10; /* Ensure it's above remote videos */
+  border: 2px solid rgba(255, 255, 255, 0.3); /* Add subtle border to distinguish overlay */
+}
+
+.remote-videos {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  width: 100%;
+  max-width: 1200px;
+}
+
 .remote-video-wrapper {
   position: relative;
   background: #000;
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  aspect-ratio: 1 / 1; /* Make wrapper square */
 }
 
-.local-video,
+.local-video {
+  width: 100%;
+  height: 150px; /* Smaller height for local video */
+  object-fit: cover;
+}
+
 .remote-video {
   width: 100%;
-  height: 250px;
+  height: 100%; /* Fill the square container */
   object-fit: cover;
 }
 
@@ -924,8 +1011,22 @@ export default {
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .video-container {
+  .local-video-wrapper {
+    width: 120px; /* Even smaller on mobile */
+    right: 1rem; /* Less margin on mobile */
+  }
+
+  .local-video {
+    height: 80px; /* Smaller height on mobile */
+  }
+
+  .remote-videos {
     grid-template-columns: 1fr;
+  }
+
+  .remote-video {
+    height: auto; /* Let aspect-ratio handle height on mobile */
+    aspect-ratio: 1 / 1; /* Keep square on mobile */
   }
 
   .controls {
