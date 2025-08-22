@@ -9,21 +9,6 @@
       <div class="join-form">
         <h2>Call your mom</h2>
 
-        <!-- Show room link if we have a roomId from URL -->
-        <div v-if="roomIdFromUrl" class="room-link-display">
-          <h3>You're joining room: {{ roomIdFromUrl }}</h3>
-          <div class="link-container">
-            <input :value="currentRoomUrl" readonly class="room-link-input" ref="roomLinkInput" />
-            <button @click="copyRoomLink" class="copy-btn">
-              {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
-            </button>
-          </div>
-        </div>
-
-        <button @click="joinRoom" :disabled="!roomId && !roomIdFromUrl" class="join-btn">
-          Join call
-        </button>
-
         <div v-if="!roomIdFromUrl" class="room-actions">
           <button @click="generateRoomId" class="generate-btn">Generate link</button>
 
@@ -38,6 +23,21 @@
             </div>
           </div>
         </div>
+
+        <!-- Show room link if we have a roomId from URL -->
+        <div v-if="roomIdFromUrl" class="room-link-display">
+          <h3>You're joining room: {{ roomIdFromUrl }}</h3>
+          <div class="link-container">
+            <input :value="currentRoomUrl" readonly class="room-link-input" ref="roomLinkInput" />
+            <button @click="copyRoomLink" class="copy-btn">
+              {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
+            </button>
+          </div>
+        </div>
+
+        <button @click="joinRoom" :disabled="!roomId && !roomIdFromUrl" class="join-btn">
+          Join call
+        </button>
       </div>
     </div>
 
