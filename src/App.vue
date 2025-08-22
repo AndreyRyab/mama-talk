@@ -97,7 +97,11 @@ export default {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
       ],
+      iceCandidatePoolSize: 10,
     };
 
     // Computed properties
@@ -308,7 +312,7 @@ export default {
       const peerConnection = new RTCPeerConnection(rtcConfig);
       peerConnections.set(userId, peerConnection);
 
-      // Add local stream to peer connection
+      // Add local stream to peer connection BEFORE setting up event handlers
       if (localStream) {
         localStream.getTracks().forEach((track) => {
           peerConnection.addTrack(track, localStream);
@@ -341,7 +345,10 @@ export default {
           }
         };
 
-        setTimeout(assignVideo, 100);
+        // Use nextTick to ensure DOM is updated
+        nextTick(() => {
+          setTimeout(assignVideo, 100);
+        });
       };
 
       // Handle ICE candidates
@@ -354,8 +361,19 @@ export default {
         }
       };
 
+      // Handle connection state changes
+      peerConnection.onconnectionstatechange = () => {
+        if (peerConnection.connectionState === 'failed') {
+          // Try to restart ICE
+          peerConnection.restartIce();
+        }
+      };
+
       if (shouldCreateOffer) {
-        const offer = await peerConnection.createOffer();
+        const offer = await peerConnection.createOffer({
+          offerToReceiveVideo: true,
+          offerToReceiveAudio: true,
+        });
         await peerConnection.setLocalDescription(offer);
 
         socket.emit('offer', {
@@ -374,7 +392,10 @@ export default {
       const peerConnection = peerConnections.get(fromUserId);
       await peerConnection.setRemoteDescription(offer);
 
-      const answer = await peerConnection.createAnswer();
+      const answer = await peerConnection.createAnswer({
+        offerToReceiveVideo: true,
+        offerToReceiveAudio: true,
+      });
       await peerConnection.setLocalDescription(answer);
 
       socket.emit('answer', {
@@ -394,8 +415,12 @@ export default {
     // Handle ICE candidate
     const handleIceCandidate = async (candidate, fromUserId) => {
       const peerConnection = peerConnections.get(fromUserId);
-      if (peerConnection) {
-        await peerConnection.addIceCandidate(candidate);
+      if (peerConnection && peerConnection.remoteDescription) {
+        try {
+          await peerConnection.addIceCandidate(candidate);
+        } catch (error) {
+          console.error('Error adding ICE candidate:', error);
+        }
       }
     };
 
