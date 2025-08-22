@@ -1,7 +1,7 @@
 <template>
   <div class="app">
     <header class="header">
-      <h1>🎥 MamaTalk</h1>
+      <h1>mam@Talk</h1>
     </header>
 
     <!-- Join Room Screen -->
@@ -34,12 +34,6 @@
           Join Room
         </button>
 
-        <button @click="testMediaAccess" class="test-media-btn"> Test Camera & Microphone </button>
-
-        <div v-if="mediaStatus" class="media-status">
-          {{ mediaStatus }}
-        </div>
-
         <div v-if="!roomIdFromUrl" class="room-actions">
           <button @click="generateRoomId" class="generate-btn">Generate New Room</button>
 
@@ -52,7 +46,6 @@
                 {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
               </button>
             </div>
-            <button @click="openRoomInNewTab" class="open-room-btn"> Open in New Tab </button>
           </div>
         </div>
       </div>
@@ -83,8 +76,7 @@
         <button @click="toggleAudio" :class="{ active: isAudioOn }">
           {{ isAudioOn ? '🎤' : '🔇' }}
         </button>
-        <button @click="shareRoom" class="share-btn"> 🔗 Share </button>
-        <button @click="leaveRoom" class="leave-btn"> 📞 Leave </button>
+        <button @click="leaveRoom" class="leave-btn"> 📞 </button>
       </div>
 
       <!-- Room Info -->
@@ -93,23 +85,6 @@
         <button @click="copyRoomLink" class="mini-copy-btn">
           {{ linkCopied ? '✓' : '📋' }}
         </button>
-      </div>
-    </div>
-
-    <!-- Share Modal -->
-    <div v-if="showShareModal" class="share-modal-overlay" @click="closeShareModal">
-      <div class="share-modal" @click.stop>
-        <h3>Share Room Link</h3>
-        <div class="link-container">
-          <input :value="currentRoomUrl" readonly class="room-link-input" />
-          <button @click="copyRoomLink" class="copy-btn">
-            {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
-          </button>
-        </div>
-        <div class="share-actions">
-          <button @click="openRoomInNewTab" class="open-room-btn">Open in New Tab</button>
-          <button @click="closeShareModal" class="close-btn">Close</button>
-        </div>
       </div>
     </div>
   </div>
@@ -129,10 +104,8 @@ export default {
     const isVideoOn = ref(true);
     const isAudioOn = ref(true);
     const remotePeers = ref([]);
-    const showShareModal = ref(false);
     const linkCopied = ref(false);
     const roomIdFromUrl = ref('');
-    const mediaStatus = ref('');
 
     // Refs
     const localVideo = ref(null);
@@ -218,31 +191,6 @@ export default {
       }
     };
 
-    // Test media access
-    const testMediaAccess = async () => {
-      try {
-        console.log('Testing media access...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-
-        console.log('Media access successful:', stream);
-        console.log('Video tracks:', stream.getVideoTracks());
-        console.log('Audio tracks:', stream.getAudioTracks());
-
-        // Stop the test stream
-        stream.getTracks().forEach((track) => track.stop());
-
-        alert('Camera and microphone access successful!');
-      } catch (error) {
-        console.error('Media access failed:', error);
-        alert(
-          `Media access failed: ${error.message}\n\nPlease:\n1. Allow camera and microphone permissions\n2. Make sure no other app is using your camera\n3. Try refreshing the page`,
-        );
-      }
-    };
-
     // Copy room link to clipboard
     const copyRoomLink = async () => {
       try {
@@ -265,24 +213,9 @@ export default {
       }
     };
 
-    // Open room in new tab
-    const openRoomInNewTab = () => {
-      window.open(currentRoomUrl.value, '_blank');
-    };
-
-    // Share room modal
-    const shareRoom = () => {
-      showShareModal.value = true;
-    };
-
-    const closeShareModal = () => {
-      showShareModal.value = false;
-    };
-
     // Initialize media stream
     const initializeMedia = async () => {
       try {
-        mediaStatus.value = 'Requesting camera and microphone access...';
         console.log('Requesting media access...');
 
         localStream = await navigator.mediaDevices.getUserMedia({
@@ -297,7 +230,6 @@ export default {
           },
         });
 
-        mediaStatus.value = 'Media access granted!';
         console.log('Media stream obtained:', localStream);
         console.log('Video tracks:', localStream.getVideoTracks().length);
         console.log('Audio tracks:', localStream.getAudioTracks().length);
@@ -314,15 +246,11 @@ export default {
             localVideo.value.play().catch(console.error);
             console.log('Local video playing');
           };
-
-          mediaStatus.value = 'Local video ready!';
         } else {
           console.error('Local video element not found');
-          mediaStatus.value = 'Error: Video element not found';
         }
       } catch (error) {
         console.error('Error accessing media devices:', error);
-        mediaStatus.value = `Error: ${error.message}`;
         alert(
           `Unable to access camera/microphone: ${error.message}. Please check permissions and ensure no other app is using your camera.`,
         );
@@ -599,23 +527,17 @@ export default {
       isAudioOn,
       remotePeers,
       localVideo,
-      showShareModal,
       linkCopied,
       roomIdFromUrl,
-      mediaStatus,
       currentRoomId,
       currentRoomUrl,
       roomLinkInput,
       generateRoomId,
       joinRoom,
-      testMediaAccess,
       toggleVideo,
       toggleAudio,
       leaveRoom,
       copyRoomLink,
-      openRoomInNewTab,
-      shareRoom,
-      closeShareModal,
     };
   },
 };
@@ -723,33 +645,6 @@ export default {
   background: #e9ecef;
 }
 
-.test-media-btn {
-  width: 100%;
-  padding: 0.75rem;
-  margin: 0.5rem 0;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  background: #ffc107;
-  color: #212529;
-}
-
-.test-media-btn:hover {
-  background: #ffca2c;
-}
-
-.media-status {
-  margin: 1rem 0;
-  padding: 0.5rem;
-  background: #e9ecef;
-  border-radius: 0.25rem;
-  font-size: 0.9rem;
-  text-align: center;
-  color: #495057;
-}
-
 .room-link-display {
   margin: 1rem 0;
   padding: 1rem;
@@ -792,23 +687,6 @@ export default {
 
 .copy-btn:hover {
   background: #218838;
-}
-
-.open-room-btn {
-  width: 100%;
-  padding: 0.5rem;
-  background: #17a2b8;
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  transition: background-color 0.3s;
-}
-
-.open-room-btn:hover {
-  background: #138496;
 }
 
 .room-actions {
@@ -915,14 +793,6 @@ export default {
   background: #28a745;
 }
 
-.share-btn {
-  background: #17a2b8 !important;
-}
-
-.share-btn:hover {
-  background: #138496 !important;
-}
-
 .leave-btn {
   background: #dc3545 !important;
 }
@@ -958,55 +828,6 @@ export default {
 
 .mini-copy-btn:hover {
   background: rgba(255, 255, 255, 0.3);
-}
-
-.share-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.share-modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 500px;
-}
-
-.share-modal h3 {
-  margin: 0 0 1rem 0;
-  color: #333;
-  text-align: center;
-}
-
-.share-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.close-btn {
-  flex: 1;
-  padding: 0.75rem;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.close-btn:hover {
-  background: #5a6268;
 }
 
 /* Responsive design */
@@ -1051,10 +872,6 @@ export default {
 
   .copy-btn {
     width: 100%;
-  }
-
-  .share-actions {
-    flex-direction: column;
   }
 }
 </style>
