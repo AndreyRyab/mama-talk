@@ -7,7 +7,7 @@
     <!-- Join Room Screen -->
     <div v-if="!isConnected" class="join-screen">
       <div class="join-form">
-        <h2>Join a Video Call</h2>
+        <h2>Call your mom</h2>
 
         <!-- Show room link if we have a roomId from URL -->
         <div v-if="roomIdFromUrl" class="room-link-display">
@@ -20,30 +20,20 @@
           </div>
         </div>
 
-        <div v-if="!roomIdFromUrl" class="input-group">
-          <label for="roomId">Room ID</label>
-          <input
-            id="roomId"
-            v-model="roomId"
-            type="text"
-            placeholder="Enter room ID or create new"
-            @keyup.enter="joinRoom" />
-        </div>
-
         <button @click="joinRoom" :disabled="!roomId && !roomIdFromUrl" class="join-btn">
-          Join Room
+          Join call
         </button>
 
         <div v-if="!roomIdFromUrl" class="room-actions">
-          <button @click="generateRoomId" class="generate-btn">Generate New Room</button>
+          <button @click="generateRoomId" class="generate-btn">Generate link</button>
 
           <!-- Show room link after generating -->
           <div v-if="roomId && !isConnected" class="room-link-display">
-            <h3>Share this link:</h3>
+            <h3>Send this link to your mom:</h3>
             <div class="link-container">
               <input :value="currentRoomUrl" readonly class="room-link-input" ref="roomLinkInput" />
               <button @click="copyRoomLink" class="copy-btn">
-                {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
+                {{ linkCopied ? '✓ Copied!' : 'Copy' }}
               </button>
             </div>
           </div>
@@ -71,20 +61,9 @@
 
       <div class="controls">
         <button @click="toggleVideo" :class="{ active: isVideoOn }">
-          {{ isVideoOn ? '📹' : '📷' }}
-        </button>
-        <button @click="toggleAudio" :class="{ active: isAudioOn }">
-          {{ isAudioOn ? '🎤' : '🔇' }}
+          {{ isVideoOn ? '🚫' : '🎥' }}
         </button>
         <button @click="leaveRoom" class="leave-btn"> 📞 </button>
-      </div>
-
-      <!-- Room Info -->
-      <div class="room-info">
-        <p>Room: {{ currentRoomId }} | Participants: {{ remotePeers.length + 1 }}</p>
-        <button @click="copyRoomLink" class="mini-copy-btn">
-          {{ linkCopied ? '✓' : '📋' }}
-        </button>
       </div>
     </div>
   </div>
@@ -102,7 +81,6 @@ export default {
     const roomId = ref('');
     const isConnected = ref(false);
     const isVideoOn = ref(true);
-    const isAudioOn = ref(true);
     const remotePeers = ref([]);
     const linkCopied = ref(false);
     const roomIdFromUrl = ref('');
@@ -477,17 +455,6 @@ export default {
       }
     };
 
-    // Toggle audio
-    const toggleAudio = () => {
-      if (localStream) {
-        const audioTrack = localStream.getAudioTracks()[0];
-        if (audioTrack) {
-          audioTrack.enabled = !audioTrack.enabled;
-          isAudioOn.value = audioTrack.enabled;
-        }
-      }
-    };
-
     // Leave room
     const leaveRoom = () => {
       if (socket) {
@@ -524,7 +491,6 @@ export default {
       roomId,
       isConnected,
       isVideoOn,
-      isAudioOn,
       remotePeers,
       localVideo,
       linkCopied,
@@ -535,7 +501,6 @@ export default {
       generateRoomId,
       joinRoom,
       toggleVideo,
-      toggleAudio,
       leaveRoom,
       copyRoomLink,
     };
@@ -766,7 +731,7 @@ export default {
 .controls {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 2rem;
   padding: 1rem;
   background: rgba(0, 0, 0, 0.1);
 }
@@ -774,14 +739,14 @@ export default {
 .controls button {
   padding: 1rem;
   border: none;
-  border-radius: 50%;
-  font-size: 1.5rem;
+  border-radius: 40%;
+  font-size: 48px;
   cursor: pointer;
   background: rgba(255, 255, 255, 0.2);
   color: white;
   transition: all 0.3s;
-  width: 60px;
-  height: 60px;
+  width: 100px;
+  height: 100px;
 }
 
 .controls button:hover {
@@ -799,35 +764,6 @@ export default {
 
 .leave-btn:hover {
   background: #c82333 !important;
-}
-
-.room-info {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.mini-copy-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: background-color 0.3s;
-}
-
-.mini-copy-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Responsive design */
@@ -848,17 +784,6 @@ export default {
   .remote-video {
     height: auto; /* Let aspect-ratio handle height on mobile */
     aspect-ratio: 1 / 1; /* Keep square on mobile */
-  }
-
-  .controls {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .controls button {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
   }
 
   .join-form {
