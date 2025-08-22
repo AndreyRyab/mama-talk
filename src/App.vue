@@ -305,7 +305,9 @@ export default {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Initialize Socket.IO
-        socket = io('http://localhost:3000');
+        const socketUrl = import.meta.env.PROD ? window.location.origin : 'http://localhost:3000';
+
+        socket = io(socketUrl);
 
         socket.emit('join-room', {
           roomId: finalRoomId,

@@ -2,11 +2,12 @@
 node_modules
 /dist
 
-# local env files
+# Environment files - NEVER commit these
 .env
 .env.local
+.env.development
+.env.production
 .env.*.local
 
 # Editor directories and files
-
 .vscode

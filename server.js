@@ -7,15 +7,38 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? ['https://mama-talk.onrender.com', 'https://your-app-name.onrender.com']
+        : ['http://localhost:5173', 'http://localhost:3000'],
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'dist')));
+
+  // Handle client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
+} else {
+  // Health check endpoint
+  app.get('/', (req, res) => {
+    res.json({ status: 'OK', message: 'Mama Talk Server Running' });
+  });
 }
+
+// Health check endpoint (works in both dev and prod)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
 
 // Store active rooms and users
 const rooms = new Map();
