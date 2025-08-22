@@ -48,14 +48,12 @@
         <div class="remote-videos">
           <div v-for="peer in remotePeers" :key="peer.userId" class="remote-video-wrapper">
             <video :data-user-id="peer.userId" class="remote-video" autoplay playsinline></video>
-            <div class="video-label">{{ peer.userName }}</div>
           </div>
         </div>
 
         <!-- My video (smaller, positioned as overlay in upper right) -->
         <div class="local-video-wrapper">
           <video ref="localVideo" class="local-video" autoplay muted playsinline></video>
-          <div class="video-label">You ({{ userName }})</div>
         </div>
       </div>
 
@@ -479,8 +477,8 @@ export default {
 
 <style scoped>
 .app {
-  height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  height: calc(100vh - 50px);
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
   display: flex;
   flex-direction: column;
 }
@@ -648,7 +646,6 @@ export default {
   position: absolute; /* Position as overlay */
   top: 0; /* Position near top of container */
   right: 2rem; /* Position on right side */
-  background: #000;
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
@@ -686,23 +683,11 @@ export default {
   object-fit: cover;
 }
 
-.video-label {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-  color: white;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-}
-
 .controls {
   display: flex;
   justify-content: center;
   gap: 2rem;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.1);
 }
 
 .controls button {
