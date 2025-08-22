@@ -32,6 +32,11 @@ A real-time video calling application built with WebRTC, Socket.IO, and Vue 3.
    ```bash
    npm install
    ```
+3. (Optional) Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local if needed for local development
+   ```
 
 ### Running the Application
 
