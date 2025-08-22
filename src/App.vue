@@ -194,8 +194,6 @@ export default {
     // Initialize media stream
     const initializeMedia = async () => {
       try {
-        console.log('Requesting media access...');
-
         localStream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1280 },
@@ -208,24 +206,16 @@ export default {
           },
         });
 
-        console.log('Media stream obtained:', localStream);
-        console.log('Video tracks:', localStream.getVideoTracks().length);
-        console.log('Audio tracks:', localStream.getAudioTracks().length);
-
         // Use nextTick to ensure the video element is ready
         await nextTick();
 
         if (localVideo.value) {
           localVideo.value.srcObject = localStream;
-          console.log('Local video element assigned');
 
           // Wait for video to load and play
           localVideo.value.onloadedmetadata = () => {
             localVideo.value.play().catch(console.error);
-            console.log('Local video playing');
           };
-        } else {
-          console.error('Local video element not found');
         }
       } catch (error) {
         console.error('Error accessing media devices:', error);
@@ -253,7 +243,6 @@ export default {
         await nextTick();
         if (localVideo.value && localStream) {
           localVideo.value.srcObject = localStream;
-          console.log('Re-assigning local video after join');
         }
 
         // Wait a bit for video element to be ready
@@ -301,7 +290,6 @@ export default {
         // Final check to ensure local video is working
         setTimeout(() => {
           if (localVideo.value && localStream && !localVideo.value.srcObject) {
-            console.log('Final attempt to connect local video');
             localVideo.value.srcObject = localStream;
             localVideo.value.play().catch(console.error);
           }
@@ -319,33 +307,19 @@ export default {
 
     // Create peer connection
     const createPeerConnection = async (userId, peerUserName, shouldCreateOffer) => {
-      console.log(
-        'Creating peer connection for:',
-        userId,
-        peerUserName,
-        'shouldCreateOffer:',
-        shouldCreateOffer,
-      );
-
       const peerConnection = new RTCPeerConnection(rtcConfig);
       peerConnections.set(userId, peerConnection);
 
       // Add local stream to peer connection
       if (localStream) {
-        console.log('Adding local stream tracks to peer connection');
         localStream.getTracks().forEach((track) => {
-          console.log('Adding track:', track.kind, track.enabled);
           peerConnection.addTrack(track, localStream);
         });
-      } else {
-        console.error('No local stream available when creating peer connection');
       }
 
       // Handle remote stream
       peerConnection.ontrack = (event) => {
-        console.log('Received remote track from:', userId, event);
         const [remoteStream] = event.streams;
-        console.log('Remote stream:', remoteStream);
 
         // Add peer to list if not already there
         if (!remotePeers.value.find((p) => p.userId === userId)) {
@@ -354,24 +328,18 @@ export default {
             userName: peerUserName,
             stream: remoteStream,
           });
-          console.log('Added peer to list:', userId, peerUserName);
         }
 
         // Set video source with multiple attempts
         let attempts = 0;
         const assignVideo = () => {
           const videoElement = document.querySelector(`[data-user-id="${userId}"]`);
-          console.log('Looking for video element:', `[data-user-id="${userId}"]`, videoElement);
 
           if (videoElement) {
             videoElement.srcObject = remoteStream;
-            console.log('Assigned remote stream to video element for user:', userId);
           } else if (attempts < 10) {
             attempts++;
-            console.log(`Video element not found for ${userId}, attempt ${attempts}/10`);
             setTimeout(assignVideo, 200);
-          } else {
-            console.error('Failed to find video element after 10 attempts for user:', userId);
           }
         };
 
@@ -498,6 +466,7 @@ export default {
       currentRoomId,
       currentRoomUrl,
       roomLinkInput,
+      socket: computed(() => socket), // Add socket for debugging
       generateRoomId,
       joinRoom,
       toggleVideo,

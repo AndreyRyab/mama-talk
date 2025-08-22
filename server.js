@@ -49,6 +49,8 @@ io.on('connection', (socket) => {
 
   // Join a room
   socket.on('join-room', ({ roomId, userName }) => {
+    console.log(`User ${userName} (${socket.id}) joining room ${roomId}`);
+
     socket.join(roomId);
 
     // Store user info
@@ -62,11 +64,14 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     room.add(socket.id);
 
+    console.log(`Room ${roomId} now has ${room.size} users`);
+
     // Notify others in the room
     socket.to(roomId).emit('user-joined', {
       userId: socket.id,
       userName,
     });
+    console.log(`Emitted user-joined to room ${roomId} for user ${userName}`);
 
     // Send list of existing users to the new user
     const existingUsers = Array.from(room)
@@ -76,6 +81,7 @@ io.on('connection', (socket) => {
         userName: users.get(id)?.userName || 'Unknown',
       }));
 
+    console.log(`Sending existing users to ${userName}:`, existingUsers);
     socket.emit('existing-users', existingUsers);
 
     console.log(`${userName} joined room ${roomId}`);
