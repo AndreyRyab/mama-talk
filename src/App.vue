@@ -4,7 +4,6 @@
       <h1>mam@Talk</h1>
     </header>
 
-    <!-- Join Room Screen -->
     <div v-if="!isConnected" class="join-screen">
       <div class="join-form">
         <h2>Call your mom</h2>
@@ -12,7 +11,6 @@
         <div v-if="!roomIdFromUrl" class="room-actions">
           <button @click="generateRoomId" class="generate-btn">Generate link</button>
 
-          <!-- Show room link after generating -->
           <div v-if="roomId && !isConnected" class="room-link-display">
             <h3>Send this link to your mom:</h3>
             <div class="link-container">
@@ -24,7 +22,6 @@
           </div>
         </div>
 
-        <!-- Show room link if we have a roomId from URL -->
         <div v-if="roomIdFromUrl" class="room-link-display">
           <h3>You're joining room: {{ roomIdFromUrl }}</h3>
           <div class="link-container">
@@ -41,17 +38,14 @@
       </div>
     </div>
 
-    <!-- Video Call Screen -->
     <div v-if="isConnected" class="call-screen">
       <div class="video-container">
-        <!-- Remote videos (larger) -->
         <div class="remote-videos">
           <div v-for="peer in remotePeers" :key="peer.userId" class="remote-video-wrapper">
             <video :data-user-id="peer.userId" class="remote-video" autoplay playsinline></video>
           </div>
         </div>
 
-        <!-- My video (smaller, positioned as overlay in upper right) -->
         <div class="local-video-wrapper">
           <video ref="localVideo" class="local-video" autoplay muted playsinline></video>
         </div>
@@ -74,7 +68,6 @@ import { io } from 'socket.io-client';
 export default {
   name: 'App',
   setup() {
-    // Reactive data
     const userName = ref('');
     const roomId = ref('');
     const isConnected = ref(false);
@@ -83,16 +76,13 @@ export default {
     const linkCopied = ref(false);
     const roomIdFromUrl = ref('');
 
-    // Refs
     const localVideo = ref(null);
     const roomLinkInput = ref(null);
 
-    // WebRTC and Socket.IO
     let socket = null;
     let localStream = null;
     const peerConnections = new Map();
 
-    // WebRTC configuration
     const rtcConfig = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -104,7 +94,6 @@ export default {
       iceCandidatePoolSize: 10,
     };
 
-    // Computed properties
     const currentRoomId = computed(() => roomIdFromUrl.value || roomId.value);
 
     const currentRoomUrl = computed(() => {
@@ -112,7 +101,6 @@ export default {
       return `${baseUrl}/room/${currentRoomId.value}`;
     });
 
-    // Generate random user name
     const generateRandomName = () => {
       const adjectives = [
         'Happy',
@@ -144,34 +132,28 @@ export default {
       return `${adjective}${noun}${number}`;
     };
 
-    // Initialize from URL
     onMounted(() => {
-      // Generate random name on mount
       userName.value = generateRandomName();
 
       const urlParts = window.location.pathname.split('/');
       if (urlParts[1] === 'room' && urlParts[2]) {
         roomIdFromUrl.value = urlParts[2];
         roomId.value = urlParts[2];
-        // Auto-join room if coming from URL
         setTimeout(() => {
           joinRoom();
         }, 100);
       }
     });
 
-    // Generate random room ID
     const generateRoomId = () => {
       const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
       roomId.value = newRoomId;
 
-      // Update URL
       if (window.history && window.history.pushState) {
         window.history.pushState({}, '', `/room/${newRoomId}`);
       }
     };
 
-    // Copy room link to clipboard
     const copyRoomLink = async () => {
       try {
         await navigator.clipboard.writeText(currentRoomUrl.value);
@@ -180,7 +162,6 @@ export default {
           linkCopied.value = false;
         }, 2000);
       } catch (err) {
-        // Fallback for older browsers
         const input = roomLinkInput.value;
         if (input) {
           input.select();
@@ -193,7 +174,6 @@ export default {
       }
     };
 
-    // Initialize media stream
     const initializeMedia = async () => {
       try {
         localStream = await navigator.mediaDevices.getUserMedia({
@@ -208,13 +188,11 @@ export default {
           },
         });
 
-        // Use nextTick to ensure the video element is ready
         await nextTick();
 
         if (localVideo.value) {
           localVideo.value.srcObject = localStream;
 
-          // Wait for video to load and play
           localVideo.value.onloadedmetadata = () => {
             localVideo.value.play().catch(console.error);
           };
@@ -228,12 +206,10 @@ export default {
       }
     };
 
-    // Join room
     const joinRoom = async () => {
       const finalRoomId = roomIdFromUrl.value || roomId.value;
       if (!finalRoomId.trim()) return;
 
-      // Generate new name if empty (shouldn't happen but safety check)
       if (!userName.value.trim()) {
         userName.value = generateRandomName();
       }
@@ -241,16 +217,13 @@ export default {
       try {
         await initializeMedia();
 
-        // Ensure local video is properly connected after joining
         await nextTick();
         if (localVideo.value && localStream) {
           localVideo.value.srcObject = localStream;
         }
 
-        // Wait a bit for video element to be ready
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // Initialize Socket.IO
         const socketUrl = import.meta.env.PROD ? window.location.origin : 'http://localhost:3000';
 
         socket = io(socketUrl);
@@ -260,7 +233,6 @@ export default {
           userName: userName.value,
         });
 
-        // Socket event handlers
         socket.on('existing-users', async (users) => {
           for (const user of users) {
             await createPeerConnection(user.userId, user.userName, true);
@@ -289,7 +261,6 @@ export default {
 
         isConnected.value = true;
 
-        // Final check to ensure local video is working
         setTimeout(() => {
           if (localVideo.value && localStream && !localVideo.value.srcObject) {
             localVideo.value.srcObject = localStream;
@@ -297,7 +268,6 @@ export default {
           }
         }, 1000);
 
-        // Update URL to room URL
         if (!roomIdFromUrl.value && window.history && window.history.pushState) {
           window.history.pushState({}, '', `/room/${finalRoomId}`);
         }
@@ -307,23 +277,19 @@ export default {
       }
     };
 
-    // Create peer connection
     const createPeerConnection = async (userId, peerUserName, shouldCreateOffer) => {
       const peerConnection = new RTCPeerConnection(rtcConfig);
       peerConnections.set(userId, peerConnection);
 
-      // Add local stream to peer connection BEFORE setting up event handlers
       if (localStream) {
         localStream.getTracks().forEach((track) => {
           peerConnection.addTrack(track, localStream);
         });
       }
 
-      // Handle remote stream
       peerConnection.ontrack = (event) => {
         const [remoteStream] = event.streams;
 
-        // Add peer to list if not already there
         if (!remotePeers.value.find((p) => p.userId === userId)) {
           remotePeers.value.push({
             userId,
@@ -332,7 +298,6 @@ export default {
           });
         }
 
-        // Set video source with multiple attempts
         let attempts = 0;
         const assignVideo = () => {
           const videoElement = document.querySelector(`[data-user-id="${userId}"]`);
@@ -345,13 +310,11 @@ export default {
           }
         };
 
-        // Use nextTick to ensure DOM is updated
         nextTick(() => {
           setTimeout(assignVideo, 100);
         });
       };
 
-      // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit('ice-candidate', {
@@ -361,10 +324,8 @@ export default {
         }
       };
 
-      // Handle connection state changes
       peerConnection.onconnectionstatechange = () => {
         if (peerConnection.connectionState === 'failed') {
-          // Try to restart ICE
           peerConnection.restartIce();
         }
       };
@@ -383,7 +344,6 @@ export default {
       }
     };
 
-    // Handle offer
     const handleOffer = async (offer, fromUserId, fromUserName) => {
       if (!peerConnections.has(fromUserId)) {
         await createPeerConnection(fromUserId, fromUserName, false);
@@ -404,7 +364,6 @@ export default {
       });
     };
 
-    // Handle answer
     const handleAnswer = async (answer, fromUserId) => {
       const peerConnection = peerConnections.get(fromUserId);
       if (peerConnection) {
@@ -412,7 +371,6 @@ export default {
       }
     };
 
-    // Handle ICE candidate
     const handleIceCandidate = async (candidate, fromUserId) => {
       const peerConnection = peerConnections.get(fromUserId);
       if (peerConnection && peerConnection.remoteDescription) {
@@ -424,7 +382,6 @@ export default {
       }
     };
 
-    // Remove peer connection
     const removePeerConnection = (userId) => {
       const peerConnection = peerConnections.get(userId);
       if (peerConnection) {
@@ -435,7 +392,6 @@ export default {
       remotePeers.value = remotePeers.value.filter((peer) => peer.userId !== userId);
     };
 
-    // Toggle video
     const toggleVideo = () => {
       if (localStream) {
         const videoTrack = localStream.getVideoTracks()[0];
@@ -446,7 +402,6 @@ export default {
       }
     };
 
-    // Leave room
     const leaveRoom = () => {
       if (socket) {
         socket.disconnect();
@@ -462,17 +417,14 @@ export default {
       remotePeers.value = [];
       isConnected.value = false;
 
-      // Navigate back to home
       if (window.history && window.history.pushState) {
         window.history.pushState({}, '', '/');
       }
 
-      // Reset room IDs
       roomIdFromUrl.value = '';
       roomId.value = '';
     };
 
-    // Cleanup on unmount
     onUnmounted(() => {
       leaveRoom();
     });
@@ -489,7 +441,7 @@ export default {
       currentRoomId,
       currentRoomUrl,
       roomLinkInput,
-      socket: computed(() => socket), // Add socket for debugging
+      socket: computed(() => socket),
       generateRoomId,
       joinRoom,
       toggleVideo,
@@ -502,20 +454,20 @@ export default {
 
 <style scoped>
 .app {
-  height: calc(100vh - 50px);
-  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
   display: flex;
   flex-direction: column;
+  height: 100%;
+  max-height: 100vh;
 }
 
 .header {
+  padding: 1.5rem 1rem 1rem;
   text-align: center;
-  padding: 2rem 1rem;
   color: white;
 }
 
 .header h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   margin-bottom: 0.5rem;
 }
 
@@ -643,7 +595,7 @@ export default {
 }
 
 .copy-btn:hover {
-  background: #218838;
+  background: #88217e;
 }
 
 .room-actions {
@@ -659,7 +611,7 @@ export default {
 }
 
 .video-container {
-  position: relative; /* Make container relative for absolute positioning */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -668,15 +620,15 @@ export default {
 }
 
 .local-video-wrapper {
-  position: absolute; /* Position as overlay */
-  top: 0; /* Position near top of container */
-  right: 2rem; /* Position on right side */
+  position: absolute;
+  top: 0;
+  right: 2rem;
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  width: 200px; /* Smaller width for local video */
-  z-index: 10; /* Ensure it's above remote videos */
-  border: 2px solid rgba(255, 255, 255, 0.3); /* Add subtle border to distinguish overlay */
+  width: 200px;
+  z-index: 10;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .remote-videos {
@@ -693,18 +645,18 @@ export default {
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  aspect-ratio: 1 / 1; /* Make wrapper square */
+  aspect-ratio: 1 / 1;
 }
 
 .local-video {
   width: 100%;
-  height: 150px; /* Smaller height for local video */
+  height: 100%;
   object-fit: cover;
 }
 
 .remote-video {
   width: 100%;
-  height: 100%; /* Fill the square container */
+  height: 100%;
   object-fit: cover;
 }
 
@@ -712,7 +664,7 @@ export default {
   display: flex;
   justify-content: center;
   gap: 2rem;
-  padding: 1rem;
+  padding: 1rem 1rem 2rem;
 }
 
 .controls button {
@@ -733,27 +685,20 @@ export default {
   transform: scale(1.1);
 }
 
-.controls button.active {
-  background: #28a745;
+button.leave-btn {
+  background: #be4bd2;
 }
 
-.leave-btn {
-  background: #dc3545 !important;
+button.leave-btn:hover {
+  background: #be4bd2;
+  transform: scale(1.1);
 }
 
-.leave-btn:hover {
-  background: #c82333 !important;
-}
-
-/* Responsive design */
 @media (max-width: 768px) {
   .local-video-wrapper {
-    width: 120px; /* Even smaller on mobile */
-    right: 1rem; /* Less margin on mobile */
-  }
-
-  .local-video {
-    height: 80px; /* Smaller height on mobile */
+    width: 120px;
+    height: 120px;
+    right: 1rem;
   }
 
   .remote-videos {
@@ -761,8 +706,8 @@ export default {
   }
 
   .remote-video {
-    height: auto; /* Let aspect-ratio handle height on mobile */
-    aspect-ratio: 1 / 1; /* Keep square on mobile */
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 
   .join-form {
