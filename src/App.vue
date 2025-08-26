@@ -1,63 +1,128 @@
 <template>
-  <div class="app">
+  <div class="content-wrapper">
     <header class="header">
       <h1>mam@Talk</h1>
     </header>
 
-    <div v-if="!isConnected" class="join-screen">
-      <div class="join-form">
-        <h2>Call your mom</h2>
+    <main class="main-wrapper">
+      <section
+        v-if="isConnected"
+        class="call-screen"
+      >
+        <div class="video-container">
+          <div
+            v-for="peer in remotePeers"
+            :key="peer.userId"
+            class="remote-video-wrapper"
+          >
+            <video
+              :data-user-id="peer.userId"
+              class="remote-video"
+              autoplay
+              playsinline
+            />
+          </div>
 
-        <div v-if="!roomIdFromUrl" class="room-actions">
-          <button @click="generateRoomId" class="generate-btn">Generate link</button>
+          <div class="local-video-wrapper">
+            <video
+              ref="localVideo"
+              class="local-video"
+              playsinline
+              autoplay
+              muted
+            />
+          </div>
+        </div>
 
-          <div v-if="roomId && !isConnected" class="room-link-display">
-            <h3>Send this link to your mom:</h3>
+        <div class="controls">
+          <button
+            :class="{ active: isVideoOn }"
+            @click="toggleVideo"
+          >
+            {{ isVideoOn ? '🚫' : '🎥' }}
+          </button>
+
+          <button
+            class="leave-btn"
+            @click="leaveRoom"
+          >
+            📞
+          </button>
+        </div>
+      </section>
+
+      <section
+        v-else
+        class="join-screen"
+      >
+        <div class="join-form">
+          <h2>Call your mom</h2>
+
+          <div
+            v-if="roomIdFromUrl"
+            class="room-link-display"
+          >
+            <h3>You're joining room: {{ roomIdFromUrl }}</h3>
+
             <div class="link-container">
-              <input :value="currentRoomUrl" readonly class="room-link-input" ref="roomLinkInput" />
-              <button @click="copyRoomLink" class="copy-btn">
-                {{ linkCopied ? '✓ Copied!' : 'Copy' }}
+              <input
+                :value="currentRoomUrl"
+                readonly
+                class="room-link-input"
+                ref="roomLinkInput"
+              />
+
+              <button
+                class="copy-btn"
+                @click="copyRoomLink"
+              >
+                {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
               </button>
             </div>
           </div>
-        </div>
 
-        <div v-if="roomIdFromUrl" class="room-link-display">
-          <h3>You're joining room: {{ roomIdFromUrl }}</h3>
-          <div class="link-container">
-            <input :value="currentRoomUrl" readonly class="room-link-input" ref="roomLinkInput" />
-            <button @click="copyRoomLink" class="copy-btn">
-              {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
+          <div v-else class="room-actions">
+            <button
+              class="generate-btn"
+              @click="generateRoomId"
+            >
+              Generate link
             </button>
+
+            <div
+              v-if="roomId && !isConnected"
+              class="room-link-display"
+            >
+              <h3>Send this link to your mom:</h3>
+
+              <div class="link-container">
+                <input
+                  :value="currentRoomUrl"
+                  ref="roomLinkInput"
+                  readonly
+                  class="room-link-input"
+                />
+
+                <button
+                  class="copy-btn"
+                  @click="copyRoomLink"
+                >
+                  {{ linkCopied ? '✓ Copied!' : 'Copy' }}
+                </button>
+              </div>
+            </div>
           </div>
+
+          <button
+            :disabled="!roomId && !roomIdFromUrl"
+            class="join-btn"
+            @click="joinRoom"
+          >
+            Join call
+          </button>
         </div>
-
-        <button @click="joinRoom" :disabled="!roomId && !roomIdFromUrl" class="join-btn">
-          Join call
-        </button>
-      </div>
-    </div>
-
-    <div v-if="isConnected" class="call-screen">
-      <div class="video-container">
-        <div class="remote-videos">
-          <div v-for="peer in remotePeers" :key="peer.userId" class="remote-video-wrapper">
-            <video :data-user-id="peer.userId" class="remote-video" autoplay playsinline></video>
-          </div>
-        </div>
-
-        <div class="local-video-wrapper">
-          <video ref="localVideo" class="local-video" autoplay muted playsinline></video>
-        </div>
-      </div>
-
-      <div class="controls">
-        <button @click="toggleVideo" :class="{ active: isVideoOn }">
-          {{ isVideoOn ? '🚫' : '🎥' }}
-        </button>
-        <button @click="leaveRoom" class="leave-btn"> 📞 </button>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 </template>
 
@@ -453,38 +518,43 @@ export default {
 </script>
 
 <style scoped>
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  max-height: 100vh;
+.content-wrapper {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  padding: 1rem;
 }
 
 .header {
-  padding: 1.5rem 1rem 1rem;
+  padding: 0.5rem 1rem 1.5rem;
   text-align: center;
   color: white;
 }
 
 .header h1 {
   font-size: 2rem;
-  margin-bottom: 0.5rem;
 }
 
 .join-screen {
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 60vh;
+  height: 100%;
 }
 
 .join-form {
-  background: white;
+  align-self: flex-end;
+  margin: 0 auto 3rem;
   padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 500px;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  background: white;
+
+  @media (min-width: 768px) {
+    align-self: flex-start;
+    margin: 3rem auto 0;
+  }
 }
 
 .join-form h2 {
@@ -585,8 +655,7 @@ export default {
 
 .copy-btn {
   padding: 0.5rem 1rem;
-  background: #28a745;
-  color: white;
+  background: #ddd;
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
@@ -596,6 +665,7 @@ export default {
 
 .copy-btn:hover {
   background: #88217e;
+  color: white;
 }
 
 .room-actions {
@@ -603,49 +673,49 @@ export default {
 }
 
 .call-screen {
-  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100vh;
+  height: 100%;
 }
 
 .video-container {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 1rem;
   padding: 1rem;
-  align-items: center;
 }
 
 .local-video-wrapper {
   position: absolute;
   top: 0;
-  right: 2rem;
-  border-radius: 0.5rem;
+  right: 1rem;
+  width: 100px;
+  height: 100px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  width: 200px;
-  z-index: 10;
   border: 2px solid rgba(255, 255, 255, 0.3);
-}
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 
-.remote-videos {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  width: 100%;
-  max-width: 1200px;
+  @media (min-width: 768px) {
+    width: 150px;
+    height: 150px;
+  }  
 }
 
 .remote-video-wrapper {
   position: relative;
+  aspect-ratio: 1 / 1;
   background: #000;
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  aspect-ratio: 1 / 1;
+
+  @media (min-width: 640px) {
+    max-width: 40%;
+  }
 }
 
 .local-video {
@@ -695,26 +765,6 @@ button.leave-btn:hover {
 }
 
 @media (max-width: 768px) {
-  .local-video-wrapper {
-    width: 120px;
-    height: 120px;
-    right: 1rem;
-  }
-
-  .remote-videos {
-    grid-template-columns: 1fr;
-  }
-
-  .remote-video {
-    height: auto;
-    aspect-ratio: 1 / 1;
-  }
-
-  .join-form {
-    margin: 1rem;
-    padding: 1.5rem;
-  }
-
   .link-container {
     flex-direction: column;
   }
