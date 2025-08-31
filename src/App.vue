@@ -722,19 +722,21 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scaleX(-1);
 }
 
 .remote-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scaleX(-1);
 }
 
 .controls {
   display: flex;
   justify-content: center;
   gap: 2rem;
-  padding: 1rem 1rem 2rem;
+  padding: 1rem 1rem 4rem;
 }
 
 .controls button {
