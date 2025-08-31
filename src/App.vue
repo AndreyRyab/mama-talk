@@ -736,7 +736,7 @@ export default {
   display: flex;
   justify-content: center;
   gap: 2rem;
-  padding: 1rem 1rem 4rem;
+  padding: 0 1rem 5rem;
 }
 
 .controls button {
