@@ -1,7 +1,7 @@
 <template>
   <div class="content-wrapper">
     <header class="header">
-      <h1>mam@Talk</h1>
+      <h1>mom@Talk</h1>
     </header>
 
     <main class="main-wrapper">
