@@ -9,28 +9,30 @@
         v-if="isConnected"
         class="call-screen"
       >
-        <div class="video-container">
-          <div
-            v-for="peer in remotePeers"
-            :key="peer.userId"
-            class="remote-video-wrapper"
-          >
-            <video
-              :data-user-id="peer.userId"
-              class="remote-video"
-              autoplay
-              playsinline
-            />
-          </div>
-
-          <div class="local-video-wrapper">
-            <video
-              ref="localVideo"
-              class="local-video"
-              playsinline
-              autoplay
-              muted
-            />
+        <div class="video-wrapper">
+          <div class="video-container">
+            <div
+              v-for="peer in remotePeers"
+              :key="peer.userId"
+              class="remote-video-wrapper"
+            >
+              <video
+                :data-user-id="peer.userId"
+                class="remote-video"
+                autoplay
+                playsinline
+              />
+            </div>
+  
+            <div class="local-video-wrapper">
+              <video
+                ref="localVideo"
+                class="local-video"
+                playsinline
+                autoplay
+                muted
+              />
+            </div>
           </div>
         </div>
 
@@ -543,7 +545,7 @@ export default {
 
 .join-form {
   align-self: flex-end;
-  margin: 0 auto 3rem;
+  margin: 0 auto 5rem;
   padding: 2rem;
   width: 100%;
   max-width: 500px;
@@ -673,11 +675,8 @@ export default {
   margin-top: 1rem;
 }
 
-.call-screen {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
+.video-wrapper {
+  margin-bottom: 4rem;
 }
 
 .video-container {
@@ -689,12 +688,16 @@ export default {
   padding: 1rem;
 }
 
+.video-container:first-of-type {
+  padding: 3rem 1rem 1rem;
+}
+
 .local-video-wrapper {
   position: absolute;
   top: 0;
   right: 1rem;
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 0.5rem;
