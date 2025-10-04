@@ -759,11 +759,11 @@ export default {
 }
 
 button.leave-btn {
-  background: #bbc025;
+  background: #d4d92d;
 }
 
 button.leave-btn:hover {
-  background: #bbc025;
+  background: #d4d92d;
   transform: scale(1.1);
 }
 
