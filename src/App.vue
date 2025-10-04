@@ -621,7 +621,8 @@ export default {
 }
 
 .generate-btn:hover {
-  background: #e9ecef;
+  background: #667eea;
+  color:  white;
 }
 
 .room-link-display {
@@ -664,7 +665,7 @@ export default {
 }
 
 .copy-btn:hover {
-  background: #88217e;
+  background: #667eea;
   color: white;
 }
 
@@ -758,11 +759,11 @@ export default {
 }
 
 button.leave-btn {
-  background: #be4bd2;
+  background: #bbc025;
 }
 
 button.leave-btn:hover {
-  background: #be4bd2;
+  background: #bbc025;
   transform: scale(1.1);
 }
 
