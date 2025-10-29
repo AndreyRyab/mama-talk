@@ -5,96 +5,48 @@
     </header>
 
     <main class="main-wrapper">
-      <section
-        v-if="isConnected"
-        class="call-screen"
-      >
+      <section v-if="isConnected" class="call-screen">
         <div class="video-wrapper">
           <div class="video-container">
-            <div
-              v-for="peer in remotePeers"
-              :key="peer.userId"
-              class="remote-video-wrapper"
-            >
-              <video
-                :data-user-id="peer.userId"
-                class="remote-video"
-                autoplay
-                playsinline
-              />
+            <div v-for="peer in remotePeers" :key="peer.userId" class="remote-video-wrapper">
+              <video :data-user-id="peer.userId" class="remote-video" autoplay playsinline />
             </div>
-  
+
             <div class="local-video-wrapper">
-              <video
-                ref="localVideo"
-                class="local-video"
-                playsinline
-                autoplay
-                muted
-              />
+              <video ref="localVideo" class="local-video" playsinline autoplay muted />
             </div>
           </div>
         </div>
 
         <div class="controls">
-          <button
-            :class="{ active: isVideoOn }"
-            @click="toggleVideo"
-          >
+          <button :class="{ active: isVideoOn }" @click="toggleVideo">
             {{ isVideoOn ? '🚫' : '🎥' }}
           </button>
 
-          <button
-            class="leave-btn"
-            @click="leaveRoom"
-          >
-            📞
-          </button>
+          <button class="leave-btn" @click="leaveRoom"> 📞 </button>
         </div>
       </section>
 
-      <section
-        v-else
-        class="join-screen"
-      >
+      <section v-else class="join-screen">
         <div class="join-form">
           <h2>Call your mom</h2>
 
-          <div
-            v-if="roomIdFromUrl"
-            class="room-link-display"
-          >
+          <div v-if="roomIdFromUrl" class="room-link-display">
             <h3>You're joining room: {{ roomIdFromUrl }}</h3>
 
             <div class="link-container">
-              <input
-                :value="currentRoomUrl"
-                readonly
-                class="room-link-input"
-                ref="roomLinkInput"
-              />
+              <input :value="currentRoomUrl" readonly class="room-link-input" ref="roomLinkInput" />
 
-              <button
-                class="copy-btn"
-                @click="copyRoomLink"
-              >
+              <button class="copy-btn" @click="copyRoomLink">
                 {{ linkCopied ? '✓ Copied!' : 'Copy Link' }}
               </button>
             </div>
           </div>
 
           <div v-else class="room-actions">
-            <button
-              class="generate-btn"
-              @click="generateRoomId"
-            >
-              Generate link
-            </button>
+            <button class="generate-btn" @click="generateRoomId"> Generate link </button>
 
-            <div
-              v-if="roomId && !isConnected"
-              class="room-link-display"
-            >
+            <div v-if="roomId && !isConnected" class="room-link-display">
               <h3>Send this link to your mom:</h3>
 
               <div class="link-container">
@@ -102,24 +54,16 @@
                   :value="currentRoomUrl"
                   ref="roomLinkInput"
                   readonly
-                  class="room-link-input"
-                />
+                  class="room-link-input" />
 
-                <button
-                  class="copy-btn"
-                  @click="copyRoomLink"
-                >
+                <button class="copy-btn" @click="copyRoomLink">
                   {{ linkCopied ? '✓ Copied!' : 'Copy' }}
                 </button>
               </div>
             </div>
           </div>
 
-          <button
-            :disabled="!roomId && !roomIdFromUrl"
-            class="join-btn"
-            @click="joinRoom"
-          >
+          <button :disabled="!roomId && !roomIdFromUrl" class="join-btn" @click="joinRoom">
             Join call
           </button>
         </div>
@@ -302,12 +246,12 @@ export default {
 
         socket.on('existing-users', async (users) => {
           for (const user of users) {
-            await createPeerConnection(user.userId, user.userName, true);
+            await createPeerConnection(user.userId, user.userName, false);
           }
         });
 
         socket.on('user-joined', async ({ userId, userName: newUserName }) => {
-          await createPeerConnection(userId, newUserName, false);
+          await createPeerConnection(userId, newUserName, true);
         });
 
         socket.on('user-left', ({ userId }) => {
@@ -352,6 +296,8 @@ export default {
         localStream.getTracks().forEach((track) => {
           peerConnection.addTrack(track, localStream);
         });
+      } else {
+        console.error('[PEER] No local stream available!');
       }
 
       peerConnection.ontrack = (event) => {
@@ -363,6 +309,7 @@ export default {
             userName: peerUserName,
             stream: remoteStream,
           });
+          console.log('[PEER] Added peer to remotePeers:', userId, peerUserName);
         }
 
         let attempts = 0;
@@ -374,6 +321,8 @@ export default {
           } else if (attempts < 10) {
             attempts++;
             setTimeout(assignVideo, 200);
+          } else {
+            console.error('[PEER] Failed to find video element after 10 attempts for:', userId);
           }
         };
 
@@ -403,7 +352,6 @@ export default {
           offerToReceiveAudio: true,
         });
         await peerConnection.setLocalDescription(offer);
-
         socket.emit('offer', {
           offer,
           targetUserId: userId,
@@ -418,13 +366,11 @@ export default {
 
       const peerConnection = peerConnections.get(fromUserId);
       await peerConnection.setRemoteDescription(offer);
-
       const answer = await peerConnection.createAnswer({
         offerToReceiveVideo: true,
         offerToReceiveAudio: true,
       });
       await peerConnection.setLocalDescription(answer);
-
       socket.emit('answer', {
         answer,
         targetUserId: fromUserId,
@@ -435,6 +381,8 @@ export default {
       const peerConnection = peerConnections.get(fromUserId);
       if (peerConnection) {
         await peerConnection.setRemoteDescription(answer);
+      } else {
+        console.error('[WEBRTC] No peer connection found for:', fromUserId);
       }
     };
 
@@ -444,8 +392,10 @@ export default {
         try {
           await peerConnection.addIceCandidate(candidate);
         } catch (error) {
-          console.error('Error adding ICE candidate:', error);
+          console.error('[ICE] Error adding ICE candidate:', error);
         }
+      } else {
+        console.warn('[ICE] Cannot add ICE candidate - peer connection not ready');
       }
     };
 
@@ -624,7 +574,7 @@ export default {
 
 .generate-btn:hover {
   background: #667eea;
-  color:  white;
+  color: white;
 }
 
 .room-link-display {
@@ -706,7 +656,7 @@ export default {
   @media (min-width: 768px) {
     width: 150px;
     height: 150px;
-  }  
+  }
 }
 
 .remote-video-wrapper {
